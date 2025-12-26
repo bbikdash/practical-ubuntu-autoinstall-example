@@ -1,4 +1,4 @@
-# 
+# Practical Autoinstall Example for Ubuntu Desktop
 
 Assuming you have installation media (a USB stick) with Ubuntu Desktop 24.04 on it. Simply drop this file onto the highest level directory of the USB.
 

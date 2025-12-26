@@ -1,0 +1,600 @@
+#cloud-config
+autoinstall:
+  version: 1
+  #############################################################################
+  ## Configurations you probably won't change
+  #############################################################################
+  # A list of shell commands to invoke as soon as the installer starts, in particular before probing for block and network devices.
+  # Replace the current autoinstall configuration with one provided by a trusted server
+  early-commands:
+    - ping -c 1 google.com
+  source:
+    id: ubuntu-desktop-minimal
+  locale: "en_US.UTF-8"
+  keyboard:
+    layout: us
+  timezone: America/New_York
+  refresh-installer: # Controls whether the installer updates to a new version before continuing, and if "true", which channel the update is downloaded from
+    update: true # Update the installer before proceeding with installation; Can be either true or false
+    channel: "stable/ubuntu-$REL" # Update from the stable channel (DEFAULT)
+  codecs:    # Choose whether to install the ubuntu-restricted-addons package
+    install: true
+  drivers:   # Choose whether to install third-party drivers as suggested by `ubuntu-drivers`.
+    # default behavior
+    install: true
+  reporting:
+    builtin:
+      type: print
+  updates: all  # Controls the type of updates that will be downloaded and installed after system installation; Can be either "security" (for security updates only) or "all" (for all updates, like in this example).
+  
+  # shutdown instead of reboot
+  shutdown: reboot
+  error-commands:
+    - tar -czf /installer-logs.tar.gz /var/log/installer/ # Collect all of the logs in /var/log/installer
+    - journalctl -b > /installer-journal.log  # Collect the live system journal too
+
+  #############################################################################
+  ## Configurations you probably WILL change
+  #############################################################################
+  identity:
+    hostname: LAPTOP
+    username: username
+    realname: My Name
+    password: password
+  
+  ssh:
+    install-server: false
+    allow-pw: false
+    authorized-keys: []
+
+  # Only works for my laptop
+  # The storage layout for device with single NVME ssd. Template was created by running install once w/o storage section
+  # and then examining /var/log/installer/user-data.log
+  # Basically creates a 150 GB partition for the OS at /
+  # Creates a partition for the rest of the available space (900 GB) at /data
+  storage:
+    config:
+    - transport: pcie
+      preserve: true
+      id: nvme-controller-nvme0
+      type: nvme_controller
+    - ptable: gpt
+      serial: SKHynix_HFS001TEJ9X162N_SYCAN03311750AO1K_1
+      wwn: eui.ace42e003ae63bf22ee4ac0000000001
+      nvme_controller: nvme-controller-nvme0
+      path: /dev/nvme0n1
+      wipe: superblock-recursive
+      preserve: false
+      name: ''
+      grub_device: false
+      id: disk-nvme0n1
+      type: disk
+
+    - device: disk-nvme0n1
+      size: 1127219200
+      wipe: superblock
+      flag: boot
+      number: 1
+      preserve: false
+      grub_device: true
+      offset: 1048576
+      path: /dev/nvme0n1p1
+      id: partition-0
+      type: partition
+    - fstype: fat32
+      volume: partition-0
+      preserve: false
+      id: format-0
+      type: format
+
+    - device: disk-nvme0n1
+      size: 2147483648
+      wipe: superblock
+      number: 2
+      preserve: false
+      offset: 1128267776
+      path: /dev/nvme0n1p2
+      id: partition-1
+      type: partition
+    - fstype: ext4
+      volume: partition-1
+      preserve: false
+      id: format-1
+      type: format
+    
+    - device: disk-nvme0n1
+      size: 1020932390912
+      wipe: superblock
+      number: 3
+      preserve: false
+      offset: 3275751424
+      path: /dev/nvme0n1p3
+      id: partition-2
+      type: partition
+
+    - name: ubuntu-vg
+      devices:
+      - partition-2
+      preserve: false
+      id: lvm_volgroup-0
+      type: lvm_volgroup
+
+    # set / to have 150 GB
+    - name: ubuntu-lv
+      volgroup: lvm_volgroup-0
+      # size: 107374182400B
+      size: 150323855360B
+      wipe: superblock
+      preserve: false
+      path: /dev/ubuntu-vg/ubuntu-lv
+      id: lvm_partition-0
+      type: lvm_partition
+    - fstype: ext4
+      volume: lvm_partition-0
+      preserve: false
+      id: format-2
+      type: format
+
+    - path: /
+      device: format-2
+      id: mount-2
+      type: mount
+
+    - path: /boot
+      device: format-1
+      id: mount-1
+      type: mount
+      
+    - path: /boot/efi
+      device: format-0
+      id: mount-0
+      type: mount
+
+    #############################################
+    # Added by chat-gpt
+    # NEW: carve out the rest of the VG for /data
+    - name: data-lv
+      volgroup: lvm_volgroup-0
+      size: -1                # "-1" means "use all remaining space"
+      wipe: superblock
+      preserve: false
+      path: /dev/ubuntu-vg/data-lv
+      id: lvm_partition-1
+      type: lvm_partition
+
+    - fstype: ext4
+      volume: lvm_partition-1
+      preserve: false
+      id: format-3
+      type: format
+
+    - path: /data
+      device: format-3
+      id: mount-3
+      type: mount
+    ############################################
+
+  packages:
+    # Core CLI packages
+    - git                   # version control system for source code
+    - vim                   # terminal-based text editor
+    - curl                  # command-line tool for HTTP/FTP requests
+    - wget                  # command-line file downloader
+    - htop                  # interactive system/process monitor
+    - unzip                 # extract .zip archives
+    - net-tools             # legacy networking tools (ifconfig, netstat, etc.)
+    - lsb-release           # distro release information utilities
+    - tmux                  # terminal multiplexer (split panes, persistent sessions)
+    - zsh                   # alternative shell with advanced features
+    - terminator            # advanced terminal emulator with split panes
+    - silversearcher-ag     # fast code-search tool (“the_silver_searcher”)
+    - detox                 # cleans filenames (removes spaces, special chars)
+    - usbutils              # list/query USB devices (lsusb)
+    - fdupes                # find/log/delete file duplicates
+    - nmap                  # scan local area network to find info about connected devices
+    - speedtest-cli         # test internet upload/download speed from CLI
+    - gpg                   # GNU Privacy Guard (encryption/signing)
+    - apt-transport-https   # enables apt to fetch packages over HTTPS, for vscode
+    - python-is-python3     # symlink: makes “python” run Python 3
+    - python3-pip           # Python 3 package manager
+    - python3-venv          # create Python virtual environments
+    - libfuse2              # needed to run appimages
+    - wireguard             # modern, fast VPN tunneling protocol
+    - lsscsi                # list and display SCSI/SATA/USB storage devices
+    - picocom               # simple serial terminal program for interfacing with serial devices
+    - unattended-upgrades
+    - build-essential
+       
+    # Desktop env packages
+    - vlc                   # VLC media (video/audio) player
+    - xdg-utils             # desktop integration helpers (open URLs/files)
+    - gnome-tweaks          # GUI tool to adjust GNOME desktop settings
+    - gnome-shell-extension-manager   # manage and install GNOME Shell extensions
+    - chrome-gnome-shell    # allows Chrome/Firefox to install GNOME extensions
+    - nemo                  # Really good file explorer from Cinnamon Desktop Env
+
+    # Server-only packages
+    # N/A
+
+  snaps:
+    - name: hello-world
+      channel: stable # Choose which channel to install the snap from (stable, candidate, beta, or edge) (DEFAULT)
+      classic: false # Choose whether or not to use classic confinement (can be either true or false) (DEFAULT)
+    - name: chromium
+      channel: stable
+      classic: false
+    - name: code
+      channel: stable
+      classic: true
+    - name: sublime-text
+      channel: stable
+      classic: true
+    - name: sublime-merge
+      channel: stable
+      classic: true
+    - name: steam
+      channel: stable
+      classic: false
+    - name: discord
+      channel: stable
+      classic: false
+    - name: audacity
+      channel: stable
+      classic: false
+    - name: libreoffice
+      channel: stable
+      classic: false
+
+  late-commands:
+    # This section runs right before the first reboot
+    - curtin in-target -- apt update -y ; apt upgrade -y
+    
+    # Save installer logs from live session
+    # subiquity-server-debug.log has a record of the commands run and their exit codes
+    - curtin in-target -- echo "Saving installer logs to /target/var/log/installer-logs.tar.gz"
+    - tar -czvf /target/var/log/installer-logs.tar.gz -C /var/log/installer/ .
+    - curtin in-target -- echo "Success! Installation complete"
+
+  user-data:
+    write_files:
+      # Use write_files to set system wide configuration files b/c it's done before user creation
+
+      # System Wide. Affects all users. GitHub known_hosts so SSH to github.com doesn’t prompt
+      - path: /etc/ssh/ssh_known_hosts
+        append: true
+        permissions: '644'
+        owner: root:root
+        content: |
+          github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+          github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+          github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
+      
+      # Remember to set update check Never in Ubuntu Software Updater app to remove notifications
+      # This creates a drop-in override with a higher lexical order, while leaving the default unattended-update configuration.
+      # Ensures declarative logic and idempotency. Safe across package upgrades. Clear separation of “vendor defaults” vs “local policy”
+      # See: https://askubuntu.com/questions/589219/can-we-extend-the-repositories-for-which-unattended-upgrades-are-enabled
+      - path: /etc/apt/apt.conf.d/99-user-custom-unattended-upgrades-local
+        permissions: '0644'
+        owner: root:root
+        content: |
+          // Remove unused automatically installed kernel-related packages
+          // (kernel images, kernel headers and kernel version locked tools).
+          Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+
+          // Do automatic removal of newly unused dependencies after the upgrade
+          Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+
+          // Do automatic removal of unused packages after the upgrade
+          // (equivalent to apt-get autoremove)
+          Unattended-Upgrade::Remove-Unused-Dependencies "true";
+
+          // Automatically reboot *WITHOUT CONFIRMATION* if
+          //  the file /var/run/reboot-required is found after the upgrade
+          Unattended-Upgrade::Automatic-Reboot "false";
+
+          // Enable logging to syslog. Default is False
+          Unattended-Upgrade::SyslogEnable "true";
+
+          APT::Periodic::Update-Package-Lists "14";
+          APT::Periodic::Download-Upgradeable-Packages "14";
+          APT::Periodic::AutocleanInterval "14";
+          APT::Periodic::Unattended-Upgrade "14";
+
+      # Add musescore update script to crontab
+      - path: /etc/cron.d/musescore-update
+        permissions: '0644'
+        owner: root:root
+        content: |
+          # Update MuseScore every month
+          # TODO
+          0 12 1 * * root /path/to/script_here >/dev/null 2>&1
+
+    runcmd:
+
+      #############################################################################################
+      #########             /home/username/ and /data Shortcuts
+      #############################################################################################
+      - echo "Creating bind mount for /data/username to /home/username/"
+      - mkdir -p /data/username
+      - mkdir -p /data/Media/
+      - echo "/data/username /home/username/ none bind 0 0" >> /etc/fstab
+      - mount --bind /data/username /home/username/
+      # Allow me to write to /data
+      - chown -R username:username /data
+      - chmod 775 /data
+
+      #############################################################################################
+      #########             NEMO File Explorer
+      #############################################################################################
+      # Instructions here: https://askubuntu.com/questions/1066752/how-to-set-nemo-as-the-default-file-manager-in-ubuntu/1446372#1446372
+      - echo "Installing Nemo alongside Nautilus..."
+      - apt update -y
+      - apt install -y nemo
+      # Keep b/c printing from browser still uses nautilus
+      # - apt purge -y nautilus
+      # Set nemo-desktop to manage desktop icons in order to use Add to Desktop extension
+      # Not sure why, but nemo is a little slow to pick on theme when logging in for the first time.
+      # It picked it up when I opened the settings for some reason
+      # Make `xdg-open` open up directories in nemo instead of nautilus
+      - xdg-mime default nemo.desktop inode/directory application/x-gnome-saved-search
+      # Make Gnome-controlled directories and **icons on the desktop** open up in nemo
+      # now instead of in nautilus
+      - gsettings set org.gnome.desktop.background show-desktop-icons false || true
+      - gsettings set org.nemo.desktop show-desktop-icons true || true
+      - |
+        cat <<'EOF' > /usr/share/applications/mimeapps.list
+        [Default Applications]
+        inode/directory=nemo.desktop
+        application/x-gnome-saved-search=nemo.desktop
+        EOF
+      # Ensure nemo-desktop runs automatically at login
+      - echo "Setting up nemo-desktop autostart..."
+      - mkdir -p /home/username/.config/autostart
+      - |
+        cat <<'EOF' > /home/username/.config/autostart/nemo-desktop.desktop
+        [Desktop Entry]
+        Type=Application
+        Name[en_US]=Nemo Desktop
+        Name=Nemo Desktop
+        Exec=nemo-desktop
+        OnlyShowIn=GNOME;Unity;X-Cinnamon;
+        X-GNOME-Autostart-enabled=true
+        NoDisplay=false
+        Hidden=false
+        Comment[en_US]=Allow nemo to manage desktop icons at startup
+        Comment=Allow nemo to manage desktop icons at startup
+        EOF
+      - chown -R username:username /home/username/.config
+      - apt autoremove -y
+
+      #############################################################################################
+      #########             TMUX
+      #############################################################################################
+      # Add tmux config to allow mouse use, scrolling, and pane splitting more easily
+      # Create as root and switch ownership to username at the end.
+      - |
+        echo "Saving default tmux config"
+        cat >> /home/username/.tmux.conf << 'EOF'
+        set -g prefix C-a
+        set -g prefix2 C-b
+        bind | split-window -h
+        bind - split-window -v
+
+        # stop escape from switching panes
+        set -s escape-time 0
+
+        set -g mode-keys vi
+        set -g status-keys vi
+
+        # switch panes using Alt-arrow without prefix
+        bind -n M-Left  select-pane -L
+        bind -n M-Right select-pane -R
+        bind -n M-Up    select-pane -U
+        bind -n M-Down  select-pane -D
+
+        bind -n M-h select-pane -L
+        bind -n M-l select-pane -R
+        bind -n M-k select-pane -U
+        bind -n M-j select-pane -D
+
+        set -g mouse on
+
+        bind P paste-buffer
+        bind-key -T copy-mode-vi v send-keys -X begin-selection
+        bind-key -T copy-mode-vi y send-keys -X copy-selection
+        bind-key -T copy-mode-vi r send-keys -X rectangle-toggle
+        #bind -T copy-mode-vi y copy-pipe "xclip -sel clip -i"
+
+        # Required for vim-tmux-clipboard
+        set -g focus-events on
+
+        # Upgrade $TERM
+        set -g default-terminal "screen-256color"
+        EOF
+
+        chown username:username /home/username/.tmux.conf
+
+      #############################################################################################
+      #########             SSH
+      #############################################################################################
+      # Redundant but ensures user's .ssh folder exists
+      - mkdir -p /home/username/.ssh
+      - chown username:username /home/username/.ssh
+      - chmod 700 /home/username/.ssh
+
+      #############################################################################################
+      #########             GITHUB
+      #############################################################################################
+      # Use a pregenerated ssh key to be able to pull from github
+      # Private key for user (read/write access)
+      - |
+        echo "Saving github ssh private keys"
+        cat >> /home/username/.ssh/id_ed25519 << 'EOF'
+        -----BEGIN OPENSSH PRIVATE KEY-----
+        # TODO
+        -----END OPENSSH PRIVATE KEY-----
+        EOF
+        # Set ownership of file to username and then change permission to read/write for it's owner only
+        chown username:username /home/username/.ssh/id_ed25519
+        chmod 600 /home/username/.ssh/id_ed25519
+
+      - |
+        echo "Saving github ssh public keys"
+        cat >> /home/username/.ssh/id_ed25519.pub << 'EOF'
+        ssh-ed25519 <your key here> username@gmail.com
+        EOF
+        # Set ownership of file to username and then change permission to read/write for it's owner only
+        chown username:username /home/username/.ssh/id_ed25519.pub
+        chmod 644 /home/username/.ssh/id_ed25519.pub
+      
+      # Set git user name and email
+      - su - username -c 'git config --global user.name username'
+      - su - username -c 'git config --global user.email username@gmail.com'
+      
+      #############################################################################################
+      #########             SUBLIME-TEXT
+      #############################################################################################
+      # - echo "Installing sublime-text"
+      # - wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
+      # - echo -e 'Types: deb\nURIs: https://download.sublimetext.com/\nSuites: apt/stable/\nSigned-By: /etc/apt/keyrings/sublimehq-pub.asc' | sudo tee /etc/apt/sources.list.d/sublime-text.sources
+      # - apt-get update
+      # - apt-get install sublime-text
+
+      #############################################################################################
+      #########             SUBLIME-MERGE
+      #############################################################################################
+      # - echo "Installing sublime-merge"
+      # - wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
+      # - apt-get install apt-transport-https
+      # - echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+      # - apt-get update
+      # - apt-get install -y sublime-merge
+
+      #############################################################################################
+      #########             VS CODE
+      #############################################################################################
+      # To automatically install the apt repository and signing key, such as on a non-interactive terminal, run the following command first:
+      # - |
+        # echo "Installing vs code via Microsoft APT repo..."
+        # apt-get update
+        # apt-get install -y wget gpg apt-transport-https software-properties-common
+        # wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/packages.microsoft.gpg
+        # echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
+        #     > /etc/apt/sources.list.d/vscode.list
+        # apt-get update
+        # apt-get install -y code
+
+      #############################################################################################
+      #########             SYNCTHING
+      #############################################################################################
+      # Set up syncthing as a system service
+      # Add the release PGP keys:
+      - sudo mkdir -p /etc/apt/keyrings
+      - sudo curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg
+
+      # The stable-v2 channel is updated with stable release builds, usually every first Tuesday of the month.
+      # Add the "stable-v2" channel to your APT sources:
+      - echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable-v2" | sudo tee /etc/apt/sources.list.d/syncthing.list
+
+      # The candidate channel is updated with release candidate builds, usually every second Tuesday of the month. These predate the corresponding stable builds by about three weeks.
+      # Add the "candidate" channel to your APT sources:
+      - echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing candidate" | sudo tee /etc/apt/sources.list.d/syncthing.list
+
+      # And finally.
+      # Update and install syncthing:
+      - sudo apt-get update
+      - sudo apt-get install syncthing
+
+      # https://docs.syncthing.net/users/autostart.html#using-systemd
+      # Enable syncthing for me as a USER Service. Syncthing will only start after the logged into the system
+      - systemctl enable syncthing@username.service
+      - systemctl start syncthing@username.service
+
+      #############################################################################################
+      #########             STEAM
+      #############################################################################################
+      # - echo "Install steam"
+      # - add-apt-repository -y multiverse
+      # - apt update
+      # - apt install -y --show-progress steam-installer
+
+      #############################################################################################
+      #########             DISCORD
+      #############################################################################################
+      # - echo "Installing discord"
+      # - curl -L -o /tmp/discord.deb https://discord.com/api/download?platform=linux&format=deb
+      # - apt install -y --show-progress /tmp/discord.deb
+
+      #############################################################################################
+      #########             MUSESCORE
+      #############################################################################################
+      # Download and install MuseScore 4 system-wide
+      - echo "Installing Musescore"
+      - curl -L -o /tmp/musescore https://github.com/musescore/MuseScore/releases/download/v4.5.2/MuseScore-Studio-4.5.2.251141401-x86_64.AppImage
+      - chmod +x /tmp/musescore
+      # Install the appimage. Auto-moves it to /usr/local/bin/
+      - /tmp/musescore install
+      # Maybe do an auto upgrade here in the future. ./musescore update updates to latest minor version 3.5->3.7; upgrade goes to latest major release version 3.7->4.5
+      
+      #############################################################################################
+      #########             OHMYZSH
+      #############################################################################################
+      - echo "Installing ohmyzsh"
+      # https://stackoverflow.com/questions/52415887/installing-oh-my-zsh-for-a-different-user-as-root-in-cloud-init-script
+      - su - username -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+
+      # Optionally, change the default shell for the user to zsh
+      - usermod --shell /usr/bin/zsh username
+      
+      # Add custom aliases and welcome for this user
+      - su - username -c 'echo "alias ll=\"ls -alh\"" >> /home/username/.oh-my-zsh/custom/custom.zsh'
+      - su - username -c 'echo "alias dir=\"nemo\"" >> /home/username/.oh-my-zsh/custom/custom.zsh'
+      - su - username -c 'echo "alias ms=\"musescore\"" >> /home/username/.oh-my-zsh/custom/custom.zsh'
+      - su - username -c 'echo "echo Welcome, User! I hope you are having a great and curious day!" >> /home/username/.oh-my-zsh/custom/custom.zsh'
+
+      # Maybe this is overkill. B/c this is an example prompt and each section is a different color:
+      # (test_env) username@LAPTOP-31SL24AU:username-server-setup ➜  git:(main) ✗
+      - |
+        echo "Setting custom zsh prompt: username@hostname:directory -> git(branch)"
+        cat >> /home/username/.zshrc << 'EOF'
+
+        autoload -U colors && colors
+        setopt prompt_subst  # allow command substitution in PROMPT
+
+        # Green user@host, orange last directory, green arrow, git branch, prompt symbol
+        PROMPT='%{$fg[green]%}%n@%M%{$reset_color%} %F{208}%1~%f %{$fg[green]%}➜ %{$reset_color%} $(git_prompt_info)'
+
+        EOF
+      #############################################################################################
+
+      #############################################################################################
+      #########             SNAP
+      #############################################################################################
+      # To configure snapd to keep only the last two versions of a snap, use the refresh.retain setting.
+      # The value must be at least two and applies system-wide
+      - snap set system refresh.retain=2
+      #############################################################################################
+
+      #############################################################################################
+      #########             GNOME Settings
+      #############################################################################################
+      # Can't really set most GNOME desktop env settings at this stage in the boot process
+      # since it requires dBus to run. dBus doesn't run until a user logins in for the
+      # first time
+      # But including these should be harmless
+      # Note: Nemo file explorer won't reflect the theme changes unless you open Settings->Appearance
+      # Then it suddenly changes. It must initiate some refresh that updates the file explorer, idk.
+      - su - username -c 'gsettings set org.gnome.desktop.interface color-scheme prefer-dark || true'
+      - su - username -c 'gsettings set org.gnome.desktop.interface gtk-theme Yaru-olive || true'
+
+      # This messes with nemo dark theme
+      # - su - username -c 'gsettings set org.gnome.desktop.a11y.interface high-contrast true || true'
+      - su - username -c 'gsettings set org.gnome.desktop.a11y.interface show-status-shapes true || true'
+      - su - username -c "gsettings set org.gnome.shell favorite-apps \"['firefox_firefox.desktop', 'nemo.desktop', 'terminator.desktop', 'org.musescore.MuseScore4portable.desktop']\""
+
+      # Move the dock to the bottom
+      - su - username -c "gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'"
+      # Set it to auto-hide
+      - su - username -c "gsettings set org.gnome.shell.extensions.ubuntu-dock autohide true || true"
+      # Don't let it extend across the whole screen
+      - su - username -c "gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false || true"

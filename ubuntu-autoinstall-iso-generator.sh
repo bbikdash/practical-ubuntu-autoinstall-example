@@ -52,14 +52,13 @@ function die() {
 
 usage() {
     cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [-a|-u|--autoinstall|--user-data autoinstall-yaml] [-s source-iso-file] [-d destination-iso-file]
+Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [-a|-u|--autoinstall|--user-data user-data-file] [-m meta-data-file] [-s source-iso-file] [-d destination-iso-file]
 
-This script
+This script will create fully-automated Ubuntu 20.04 Focal Fossa installation media.
 
 Available options:
 
 -h, --help          Print this help and exit
--v, --verbose       Print script debug info
 -a, -u, --autoinstall, --user-data    
                     Path to user-data file. Required 
 -s, --source        Source ISO file. Expects a valid Ubuntu ISO file on disk (24.04 and later for Desktop, 22.04 and later for Server) 
@@ -98,7 +97,7 @@ parse_params() {
                 user_data_file="${2-}"
                 shift
                 ;;
-            --unattended)
+            --unattended|--hands-free)
                 unattended=true
                 ;;
             --dry-run)

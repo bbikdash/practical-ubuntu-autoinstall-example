@@ -59,6 +59,11 @@ If formed properly, the entire system should be up and running in about 15 minut
 
 3. See the modified `ubuntu-autoinstall-iso-generator.sh` which is a modification
 
+Recommended configurations for VirtualBox Testing
+![VirtualBox Server Configuration](./assets/virtualbox_server_configuration.png) 
+
+![VirtualBox Desktop Configuration](./assets/virtualbox_desktop_configuration.png) 
+
 Configuration for server ISO:
 - CPU: 4 cores
 - RAM: 2048 MB

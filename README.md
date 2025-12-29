@@ -14,36 +14,38 @@ sudo apt install xorriso
 
 ## Usage
 
-To generate a new modified ISO
+To generate a new a custom ISO image with an `autoinstall.yaml` or cloudinit file, use the following script.
 
-For help
+For help, run
 ```bash
 ./ubuntu-autoinstall-iso-generator.sh -h|--help
 ```
 
-Example usage for basic custom ISO without modifying grub. It just puts `autoinstall.yaml` into the root dir of the ISO:
+Example usage for basic custom ISO without modifying grub. It just puts `autoinstall.yaml` into the root dir of the ISO. When putting the ISO on a USB and attempting to install on a new computer, clicking `Try and install Ubuntu` will eventually kick off the subiquity service that will autodetect the `autoinstall.yaml` in the ISO and begin the cloud init process. The user will be prompted `yes/no` to continue the autoinstall process after a bit:
 ```bash
 ./ubuntu-autoinstall-iso-generator.sh --autoinstall ./dev_autoinstall_desktop.yml --source /path/to/downloaded/source/iso/ubuntu-24.04.3-desktop-amd64.iso --destination ./desktop_test.iso
 ```
 
-Example usage for completely hands-free installation, no prompting at all except initial grub menu selection(use with caution):
+Example usage for completely hands-free installation, no prompting at all except initial grub menu selection (use with caution):
 ```bash
 ./ubuntu-autoinstall-iso-generator.sh --autoinstall ./dev_autoinstall_server.yml --source /path/to/downloaded/source/iso/ubuntu-24.04.3-live-server-amd64.iso --destination ./server_test.iso --unattended
 ```
 This script is modified from here: https://github.com/covertsh/ubuntu-autoinstall-generator
 
-I removed all the ridiculous emojis, added pythonic loguru style logging, and updated grub menu manipulation to work on Ubuntu 24.04 and (hopefullly) later. I tested the resulting ISOs for Server/Desktop in VirtualBox VMs and on my personal laptop.
+I removed all the ridiculous emojis, added pythonic loguru style logging, and updated grub menu manipulation to work on Ubuntu 24.04 and (hopefully) later. I tested the resulting ISOs for Server/Desktop in VirtualBox VMs and on my personal laptop.
 
 
 ## Discussion/Explanation
 
+There are numerous ways to use Ubuntu's new autoinstall/cloud-init feature each varying on levels of hands-free-ness.
 
+TODO
 
 ## Debugging/Testing
 
-There are numerous ways to use Ubuntu's new autoinstall/cloud-init feature each varying on levels of hands-free-ness.
+Testing OS flashing on hardware can be a very time consuming processing, especially when trying to test system-wide configurations from a single file like the new autoinstall/cloud-init framework.
 
-
+As such, debugging repeatedly virtually using virtual machines helps iterate way 
 Assuming you have installation media (a USB stick) with Ubuntu Desktop 24.04 on it. Simply drop this file onto the highest level directory of the USB.
 
 Initiate the install process on the new machine and step through the setup. When you get to the Installation page, select the `autoinstall` option and choose to boot from a file. Provide the path to the autoinstall file like so `file:///<name of autoinstall.yml>` and validate the install.
@@ -72,6 +74,8 @@ Configuration for server ISO:
 - CPU: 4 cores
 - RAM: 2048 MB
 - Storage: 10 GB
+
+
 Configuration for desktop ISO:
 - CPU: 8 cores
 - RAM: >7000 MB (if it's too low, the process is too slow and freezes up regularly)

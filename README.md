@@ -41,9 +41,7 @@ I removed all the ridiculous emojis, added pythonic loguru style logging, and up
 
 ## Debugging/Testing
 
-There are numerous ways to use Ubuntu's new autoinstall/cloud-init feature each varying on levels of hands-free-ness
-
-
+There are numerous ways to use Ubuntu's new autoinstall/cloud-init feature each varying on levels of hands-free-ness.
 
 
 Assuming you have installation media (a USB stick) with Ubuntu Desktop 24.04 on it. Simply drop this file onto the highest level directory of the USB.
@@ -55,9 +53,15 @@ If formed properly, the entire system should be up and running in about 15 minut
 ## Testing with VirtualBox
 
 1. Install VirtualBox
-2. If on Linux
-
-3. See the modified `ubuntu-autoinstall-iso-generator.sh` which is a modification
+2. If on Linux, you may encounter this error and may need to run this
+    ```bash
+    lsmod | grep kvm
+    # Validat output and you'll probably need to run these
+    sudo modprobe -r kvm_intel
+    sudo modprobe -r kvm
+    ```
+3. See the modified `ubuntu-autoinstall-iso-generator.sh` to generate a custom ISO image with the autoinstall embedded and set that as the optical disk to boot from when testing with VirtualBox VMs.
+4. 
 
 Recommended configurations for VirtualBox Testing
 ![VirtualBox Server Configuration](./assets/virtualbox_server_configuration.png) 
@@ -73,5 +77,5 @@ Configuration for desktop ISO:
 - RAM: >7000 MB (if it's too low, the process is too slow and freezes up regularly)
 - Storage: 25 GB
 
-Test on Ubunt 24.04.3 Server AND Desktop with VirtualBox 7.2.4 
+Test on Ubuntu 24.04.3 Server AND Desktop with VirtualBox 7.2.4 
 

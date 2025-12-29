@@ -29,7 +29,7 @@ For example,
 ![autoinstall prompt](./assets/ubuntu_autoinstall_prompt.png) 
 
 
-Example usage for completely hands-free installation, no prompting at all except initial grub menu selection (use with caution):
+Example usage for completely hands-free installation, no prompting at all except initial grub menu selection (use with caution). It completely avoids the prompt from the above image by doing what the message suggests, adding "autoinstall" to the grub kernel command line. This is done internally in the script by extracting the original ISO contents then modifying `boot/grub.cfg` to include "autoinstall". The new ISO constructed with the modified grub file will no longer stop to prompt the user at all:
 ```bash
 ./ubuntu-autoinstall-iso-generator.sh --autoinstall ./dev_autoinstall_server.yml --source /path/to/downloaded/source/iso/ubuntu-24.04.3-live-server-amd64.iso --destination ./server_test.iso --unattended
 ```

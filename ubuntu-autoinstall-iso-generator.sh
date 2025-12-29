@@ -52,25 +52,76 @@ function die() {
 
 usage() {
     cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [-a|-u|--autoinstall|--user-data user-data-file] [-m meta-data-file] [-s source-iso-file] [-d destination-iso-file]
+Usage:
+  $(basename "${BASH_SOURCE[0]}") [OPTIONS]
 
-This script will create fully-automated Ubuntu 20.04 Focal Fossa installation media.
+Summary:
+  Create a custom Ubuntu Desktop or Server ISO with an embedded autoinstall
+  configuration. The resulting ISO will automatically provision a system
+  using Subiquity when booted.
 
-Available options:
+  This script supports Ubuntu:
+    - Desktop 24.04 and newer
+    - Server 22.04 and newer (24.04+ recommended)
 
--h, --help          Print this help and exit
--a, -u, --autoinstall, --user-data    
-                    Path to user-data file. Required 
--s, --source        Source ISO file. Expects a valid Ubuntu ISO file on disk (24.04 and later for Desktop, 22.04 and later for Server) 
-                    and saved as ${script_dir}/ubuntu-original-$today.iso
-                    That file will be used by default if it already exists.
--d, --destination       Destination ISO file. By default ${script_dir}/ubuntu-autoinstall-$today.iso will be
-                        created, overwriting any existing file.
---unattended, --hands-free  
---dry-run           
+Required options:
+  -a, -u, --autoinstall, --user-data FILE
+        Path to an autoinstall-compatible cloud-init user-data file.
+        This file will be copied into the ISO root as:
+            /autoinstall.yaml
+
+  -s, --source FILE
+        Path to the original Ubuntu ISO (Desktop or Server).
+        The ISO is extracted, modified, and repackaged.
+
+Optional options:
+  -d, --destination FILE
+        Output path for the generated ISO.
+        Defaults to:
+            ./custom.iso
+        Existing files will be overwritten.
+
+  --unattended, --hands-free
+        Modify GRUB boot entries to automatically start autoinstall
+        without requiring user interaction at the boot menu.
+
+        Without this flag:
+          - Subiquity will detect autoinstall.yaml
+          - A confirmation prompt may still appear
+
+        With this flag:
+          - Autoinstall starts immediately on boot
+
+  --dry-run
+        Perform input validation and print planned actions,
+        but do not extract the ISO, modify files, or repackage.
+        Exits successfully without side effects.
+
+  -h, --help
+        Show this help text and exit.
+
+Behavior notes:
+  - The autoinstall file is embedded directly at the ISO root.
+    No NoCloud seed directory is required.
+  - The resulting ISO boots in both BIOS and UEFI modes.
+  - This script is suitable for imaging physical machines and VMs.
+
+Examples:
+  Build a custom unattended ISO:
+    $(basename "${BASH_SOURCE[0]}") \\
+      --source ubuntu-24.04-live-server-amd64.iso \\
+      --autoinstall autoinstall.yaml \\
+      --destination ubuntu-autoinstall.iso \\
+      --unattended
+
+  Validate inputs without modifying anything:
+    $(basename "${BASH_SOURCE[0]}") \\
+      --source ubuntu-24.04-desktop-amd64.iso \\
+      --autoinstall autoinstall.yaml \\
+      --dry-run
 
 EOF
-    exit
+    exit 0
 }
 
 parse_params() {
@@ -84,7 +135,6 @@ parse_params() {
     while :; do
         case "${1-}" in
             -h|--help) usage ;;
-            -v|--verbose) ;;
             -s|--source)
                 source_iso="${2-}"
                 shift

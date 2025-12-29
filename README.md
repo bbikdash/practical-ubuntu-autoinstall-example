@@ -25,6 +25,9 @@ Example usage for basic custom ISO without modifying grub. It just puts `autoins
 ```bash
 ./ubuntu-autoinstall-iso-generator.sh --autoinstall ./dev_autoinstall_desktop.yml --source /path/to/downloaded/source/iso/ubuntu-24.04.3-desktop-amd64.iso --destination ./desktop_test.iso
 ```
+For example, 
+![autoinstall prompt](./assets/ubuntu_autoinstall_prompt.png) 
+
 
 Example usage for completely hands-free installation, no prompting at all except initial grub menu selection (use with caution):
 ```bash

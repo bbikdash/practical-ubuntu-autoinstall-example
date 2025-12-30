@@ -200,17 +200,20 @@ if $dry_run; then
 fi
 
 logger.info "Extracting source ISO image to $tmpdir"
-xorriso -osirrox on -indev "${source_iso}" -extract / "$tmpdir"
+# xorriso -osirrox on -indev "${source_iso}" -extract / 
+7z -y x ${source_iso} -o"$tmpdir"
 chmod -R u+w "$tmpdir"
 log "Extracted to $tmpdir"
+
+logger.info "Renaming $tmpdir/[BOOT] to $tmpdir/BOOT" 
+mv "$tmpdir/[BOOT]" "$tmpdir/BOOT"
+ls $tmpdir
 
 # 1) Copies user specified
 logger.info "Copying ${user_data_file} to ISO media root $tmpdir/autoinstall.yaml"
 cp "$user_data_file" "$tmpdir/autoinstall.yaml"
 
 # 2) Add `autoinstall` to menu entry 
-# sed -i -e 's/ ---/  autoinstall ds=nocloud;s=\/cdrom\/nocloud\/ ---/g' "$tmpdir/boot/grub/grub.cfg"
-# sed -i -e 's/ ---/  autoinstall ds=nocloud;s=\/cdrom\/nocloud\/ ---/g' "$tmpdir/boot/grub/loopback.cfg"
 if $unattended; then
     logger.warning "Adding autoinstall flag to grub boot menu option (disables yes/no prompt when subiquity detects autoinstall.yaml)"
     sed -i -e 's/ ---/ autoinstall ---/g' "$tmpdir/boot/grub/grub.cfg"
@@ -225,21 +228,39 @@ echo >&2 -e "${BOLD_WHITE}${tmpdir}/boot/grub/loopback.cfg${RESET}"
 cat "$tmpdir/boot/grub/loopback.cfg"
 echo "---------------------------------------------------------------------------------------------"
 
+
+# Forming a proper USB-compatible ISO image is the tricky part hear. If you don't get the flags right it won't work on real hardware
+# The easiest way is to essentially take a working example, i.e. the Canonical provided Ubuntu Server/desktop images, and use the
+# flags that they used to construct a GOOD bootable image.
+# Forunately, you can find this information out with the following command:
+# xorriso -indev <path to ISO> -report_el_torito as_mkisofs
+# The command below was created by copying the results of that command and modifying the input and output to create a custom ISO
+# exactly like Canonical would
 logger.info "Repackaging modified ISO from $tmpdir to $destination_iso"
 cd "$tmpdir"
 xorriso -as mkisofs \
-  -r \
-  -V "ubuntu-autoinstall-${today}" \
-  -o "${destination_iso}" \
-  -J -l \
-  -b boot/grub/i386-pc/eltorito.img \
+    -r -V "ubuntu-autoinstall-${today}" \
+    -o "${destination_iso}" \
+    --modification-date='2025080523540700' \
+    --grub2-mbr BOOT/1-Boot-NoEmul.img \
+    --protective-msdos-label \
+    -partition_cyl_align off \
+    -partition_offset 16 \
+    --mbr-force-bootable \
+    -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b BOOT/2-Boot-NoEmul.img \
+    -appended_part_as_gpt \
+    -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
+    -c '/boot.catalog' \
+    -b '/boot/grub/i386-pc/eltorito.img' \
     -no-emul-boot \
     -boot-load-size 4 \
     -boot-info-table \
-  -eltorito-alt-boot \
-  -e EFI/boot/bootx64.efi \
+    --grub2-boot-info \
+    -eltorito-alt-boot \
+    -e '--interval:appended_partition_2_start_1610304s_size_10160d:all::' \
     -no-emul-boot \
-  "${tmpdir}"
+    -boot-load-size 10160 \
+    "${tmpdir}"
 
 cd $script_dir
 logger.info "Custom ISO successfully built to $destination_iso"

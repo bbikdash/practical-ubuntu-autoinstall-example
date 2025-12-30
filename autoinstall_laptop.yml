@@ -339,8 +339,8 @@ autoinstall:
       - xdg-mime default nemo.desktop inode/directory application/x-gnome-saved-search
       # Make Gnome-controlled directories and **icons on the desktop** open up in nemo
       # now instead of in nautilus
-      - gsettings set org.gnome.desktop.background show-desktop-icons false || true
-      - gsettings set org.nemo.desktop show-desktop-icons true || true
+      # - gsettings set org.gnome.desktop.background show-desktop-icons false || true
+      # - gsettings set org.nemo.desktop show-desktop-icons true || true
       - |
         cat <<'EOF' > /usr/share/applications/mimeapps.list
         [Default Applications]
@@ -584,17 +584,21 @@ autoinstall:
       # But including these should be harmless
       # Note: Nemo file explorer won't reflect the theme changes unless you open Settings->Appearance
       # Then it suddenly changes. It must initiate some refresh that updates the file explorer, idk.
-      - su - username -c 'gsettings set org.gnome.desktop.interface color-scheme prefer-dark || true'
-      - su - username -c 'gsettings set org.gnome.desktop.interface gtk-theme Yaru-olive || true'
+      - su - username -c 'gsettings set org.gnome.desktop.interface color-scheme prefer-dark'
+      - su - username -c 'gsettings set org.gnome.desktop.interface gtk-theme Yaru-olive'
+
+      # Make Gnome-controlled directories and **icons on the desktop** open up in nemo
+      # now instead of in nautilus
+      - gsettings set org.gnome.desktop.background show-desktop-icons false
+      - gsettings set org.nemo.desktop show-desktop-icons true
 
       # This messes with nemo dark theme
-      # - su - username -c 'gsettings set org.gnome.desktop.a11y.interface high-contrast true || true'
-      - su - username -c 'gsettings set org.gnome.desktop.a11y.interface show-status-shapes true || true'
+      # - su - username -c 'gsettings set org.gnome.desktop.a11y.interface high-contrast true'
+      - su - username -c 'gsettings set org.gnome.desktop.a11y.interface show-status-shapes true'
       - su - username -c "gsettings set org.gnome.shell favorite-apps \"['firefox_firefox.desktop', 'nemo.desktop', 'terminator.desktop', 'org.musescore.MuseScore4portable.desktop']\""
 
-      # Move the dock to the bottom
+      # Move the dock to the bottom and set to panel mode (i.e. don't let it extend across the whole screen)
       - su - username -c "gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'"
+      - su - username -c "gsettings set org.gnome.shell.extensions.dash-to-dock extend-height false"
       # Set it to auto-hide
-      - su - username -c "gsettings set org.gnome.shell.extensions.ubuntu-dock autohide true || true"
-      # Don't let it extend across the whole screen
-      - su - username -c "gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false || true"
+      - su - username -c "gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false"

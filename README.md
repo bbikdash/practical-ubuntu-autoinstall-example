@@ -4,6 +4,10 @@ Example of functional simple and complex autoinstall.yaml files for hands-free f
 
 Shell script that can build a custom ISO image based on a standard Ubuntu Desktop/Server ISO but inserts autoinstall.yaml and optionally, modified the grub kernel command line to have completely hands-free OS installation (no user prompt at all).
 
+References:
+- Script extends some work from here: https://www.youtube.com/watch?v=ibvxiybT96M
+- Script is heavily modified from here: https://github.com/covertsh/ubuntu-autoinstall-generator
+
 ## Prerequisites
 To use [`ubuntu-autoinstall-iso-generator.sh`](./ubuntu-autoinstall-iso-generator.sh), ensure you have installed these prerequisite packages.
 
@@ -48,14 +52,19 @@ TODO
 
 Testing OS flashing on hardware can be a very time consuming processing, especially when trying to test system-wide configurations from a single file like the new autoinstall/cloud-init framework.
 
-As such, debugging repeatedly virtually using virtual machines helps iterate way 
-Assuming you have installation media (a USB stick) with Ubuntu Desktop 24.04 on it. Simply drop this file onto the highest level directory of the USB.
+As such, debugging repeatedly in software using virtual machines helps iterate the OS flashing process much faster.
 
+There's a few ways to prepare a bootable USB.
+1. Assuming you have installation media (a USB stick) with Ubuntu Desktop 24.04 on it. Simply drop this file onto the highest level directory of the USB. I was able to do this on Windows but on Linux the USB was "readable-only" so I couldn't do this
+2. Create a custom ISO with the autoinstall inside it and then create a bootable USB from that (with `dd` or other tools)
+
+
+TODO. Requires more prefacing here.
 Initiate the install process on the new machine and step through the setup. When you get to the Installation page, select the `autoinstall` option and choose to boot from a file. Provide the path to the autoinstall file like so `file:///<name of autoinstall.yml>` and validate the install.
 
 If formed properly, the entire system should be up and running in about 15 minutes with all your favorite packages and (most) settings already configured!
 
-## Testing with VirtualBox
+### Testing with VirtualBox
 
 1. Install VirtualBox
 2. If on Linux, you may encounter this error and may need to run this

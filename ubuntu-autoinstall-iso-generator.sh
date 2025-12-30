@@ -126,7 +126,7 @@ EOF
 
 parse_params() {
     # Defaults
-    user_data_file=""
+    autoinstall_file=""
     source_iso=""
     destination_iso="./custom.iso"
     dry_run=false
@@ -144,7 +144,7 @@ parse_params() {
                 shift
                 ;;
             -a|-u|--autoinstall|--user-data)
-                user_data_file="${2-}"
+                autoinstall_file="${2-}"
                 shift
                 ;;
             --unattended|--hands-free)
@@ -160,12 +160,12 @@ parse_params() {
     done
 
     # Resolve paths early (loud fail if invalid)
-    [[ -n "${user_data_file}" ]] && user_data_file=$(realpath -- "${user_data_file}") || die "Invalid user-data path"
+    [[ -n "${autoinstall_file}" ]] && autoinstall_file=$(realpath -- "${autoinstall_file}") || die "Invalid user-data path"
     [[ -n "${source_iso}" ]] && source_iso=$(realpath -- "${source_iso}") || die "Invalid source ISO path"
 
     # Validate required parameters
-    [[ -z "${user_data_file}" ]] && die "user-data file was not specified"
-    [[ ! -f "${user_data_file}" ]] && die "user data: '${user_data_file}': No such file or directory"
+    [[ -z "${autoinstall_file}" ]] && die "user-data file was not specified"
+    [[ ! -f "${autoinstall_file}" ]] && die "user data: '${autoinstall_file}': No such file or directory"
 
     [[ -z "${source_iso}" ]] && die "source ISO file was not specified"
     [[ ! -f "${source_iso}" ]] && die "source iso: '${source_iso}': No such file or directory"
@@ -190,7 +190,7 @@ else
 fi
 
 logger.warning "Detected inputs to be processed:
-    autoinstall:        $user_data_file
+    autoinstall:        $autoinstall_file
     source_iso:         $source_iso
     destination_iso:    $destination_iso
 "
@@ -210,8 +210,8 @@ mv "$tmpdir/[BOOT]" "$tmpdir/BOOT"
 ls $tmpdir
 
 # 1) Copies user specified
-logger.info "Copying ${user_data_file} to ISO media root $tmpdir/autoinstall.yaml"
-cp "$user_data_file" "$tmpdir/autoinstall.yaml"
+logger.info "Copying ${autoinstall_file} to ISO media root $tmpdir/autoinstall.yaml"
+cp "$autoinstall_file" "$tmpdir/autoinstall.yaml"
 
 # 2) Add `autoinstall` to menu entry 
 if $unattended; then

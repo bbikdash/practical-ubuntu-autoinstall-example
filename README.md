@@ -9,7 +9,7 @@ To use [`ubuntu-autoinstall-iso-generator.sh`](./ubuntu-autoinstall-iso-generato
 
 ```bash
 sudo apt update
-sudo apt install xorriso
+sudo apt install xorriso 7zip
 ```
 
 ## Usage

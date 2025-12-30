@@ -229,7 +229,7 @@ cat "$tmpdir/boot/grub/loopback.cfg"
 echo "---------------------------------------------------------------------------------------------"
 
 
-# Forming a proper USB-compatible ISO image is the tricky part hear. If you don't get the flags right it won't work on real hardware
+# Forming a proper USB-compatible ISO image is the tricky part here. If you don't get the flags right it won't work on real hardware
 # The easiest way is to essentially take a working example, i.e. the Canonical provided Ubuntu Server/desktop images, and use the
 # flags that they used to construct a GOOD bootable image.
 # Forunately, you can find this information out with the following command:

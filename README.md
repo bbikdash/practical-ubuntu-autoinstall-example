@@ -1,4 +1,4 @@
-# Practical Autoinstall Example for Ubuntu Desktop
+# Practical Autoinstall Example for Ubuntu Server/Desktop
 
 Example of functional simple and complex autoinstall.yaml files for hands-free flashing of computers with Ubuntu 24.04+ Server and/or Desktop.
 

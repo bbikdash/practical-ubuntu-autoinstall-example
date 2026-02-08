@@ -220,6 +220,7 @@ if $unattended; then
     sed -i -e 's/ ---/ autoinstall ---/g' "$tmpdir/boot/grub/loopback.cfg"
 fi
 
+# Print contents of updated grub and loopback files
 echo >&2 -e "${BOLD_WHITE}${tmpdir}/boot/grub/grub.cfg${RESET}"
 cat "$tmpdir/boot/grub/grub.cfg"
 echo "---------------------------------------------------------------------------------------------"
@@ -236,31 +237,111 @@ echo "--------------------------------------------------------------------------
 # xorriso -indev <path to ISO> -report_el_torito as_mkisofs
 # The command below was created by copying the results of that command and modifying the input and output to create a custom ISO
 # exactly like Canonical would
-logger.info "Repackaging modified ISO from $tmpdir to $destination_iso"
+# logger.info "Repackaging modified ISO from $tmpdir to $destination_iso"
+# cd "$tmpdir"
+# xorriso -as mkisofs \
+#     -r -V "ubuntu-autoinstall-${today}" \
+#     -o "${destination_iso}" \
+#     --modification-date='2025080523540700' \
+#     --grub2-mbr BOOT/1-Boot-NoEmul.img \
+#     --protective-msdos-label \
+#     -partition_cyl_align off \
+#     -partition_offset 16 \
+#     --mbr-force-bootable \
+#     -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b BOOT/2-Boot-NoEmul.img \
+#     -appended_part_as_gpt \
+#     -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
+#     -c '/boot.catalog' \
+#     -b '/boot/grub/i386-pc/eltorito.img' \
+#     -no-emul-boot \
+#     -boot-load-size 4 \
+#     -boot-info-table \
+#     --grub2-boot-info \
+#     -eltorito-alt-boot \
+#     -e '--interval:appended_partition_2_start_1610304s_size_10160d:all::' \
+#     -no-emul-boot \
+#     -boot-load-size 10160 \
+#     "${tmpdir}"
+
+##################################################################################################
+#
+###################################################################################################
+logger.info "Extracting boot structure flags from source ISO"
+
+# Make sure i'm in the temporary directory
 cd "$tmpdir"
+mapfile -t iso_boot_flags < <(
+    xorriso -indev "$source_iso" -report_el_torito as_mkisofs 2>/dev/null \
+    | awk 'BEGIN{p=0} /^[[:space:]]*-V /{p=1} p'
+)
+if ((${#iso_boot_flags[@]} == 0)); then
+    die "Failed to parse boot flags from source ISO"
+fi
+
+# Now iso_boot_flags contains lines like:
+# -V 'Ubuntu-Server 24.04.3 LTS amd64'
+# --modification-date='2025080523540700'
+# --grub2-mbr --interval:local_fs:0s-15s:zero_mbrpt,zero_gpt:'./ubuntu.iso'
+# ...
+# -boot-load-size 10160
+
+filtered_flags=()
+
+for line in "${iso_boot_flags[@]}"; do
+    trimmed="$(sed 's/^[[:space:]]*//' <<< "$line")"
+
+    case "$trimmed" in
+        -V\ *)
+            continue
+            ;;
+
+        --grub2-mbr\ --interval:local_fs:*)
+            filtered_flags+=(--grub2-mbr BOOT/1-Boot-NoEmul.img)
+            ;;
+
+        -append_partition\ 2\ *)
+            part_guid=$(awk '{print $3}' <<< "$trimmed")
+            filtered_flags+=(-append_partition 2 "$part_guid" BOOT/2-Boot-NoEmul.img)
+            ;;
+
+        *)
+            # Properly split the original mkisofs-style line into argv tokens
+            # This safely handles quoted paths like '/boot.catalog'
+            eval "set -- $trimmed"
+            filtered_flags+=("$@")
+            ;;
+    esac
+done
+
+{
+    echo "================ ORIGINAL FLAGS FROM ISO ================"
+    for line in "${iso_boot_flags[@]}"; do
+        printf '  %s\n' "$line"
+    done
+
+    echo
+    echo "================ TRANSFORMED FLAGS USED FOR BUILD ========"
+    for line in "${filtered_flags[@]}"; do
+        printf '  %s\n' "$line"
+    done
+    echo "=========================================================="
+} >&2
+
+
+echo "Inferred xorriso reconstruction command:"
+printf 'xorriso -as mkisofs -r -V %q -o %q' "ubuntu-autoinstall-${today}" "$destination_iso"
+printf ' %q' "${filtered_flags[@]}"
+printf ' %q\n' "$tmpdir"
+echo
+
+logger.info "Repackaging modified ISO from $tmpdir to $destination_iso"
 xorriso -as mkisofs \
     -r -V "ubuntu-autoinstall-${today}" \
-    -o "${destination_iso}" \
-    --modification-date='2025080523540700' \
-    --grub2-mbr BOOT/1-Boot-NoEmul.img \
-    --protective-msdos-label \
-    -partition_cyl_align off \
-    -partition_offset 16 \
-    --mbr-force-bootable \
-    -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b BOOT/2-Boot-NoEmul.img \
-    -appended_part_as_gpt \
-    -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
-    -c '/boot.catalog' \
-    -b '/boot/grub/i386-pc/eltorito.img' \
-    -no-emul-boot \
-    -boot-load-size 4 \
-    -boot-info-table \
-    --grub2-boot-info \
-    -eltorito-alt-boot \
-    -e '--interval:appended_partition_2_start_1610304s_size_10160d:all::' \
-    -no-emul-boot \
-    -boot-load-size 10160 \
+    -o "$destination_iso" \
+    "${filtered_flags[@]}" \
     "${tmpdir}"
+
+###################################################################################################
 
 cd $script_dir
 logger.info "Custom ISO successfully built to $destination_iso"

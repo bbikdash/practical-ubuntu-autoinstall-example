@@ -331,6 +331,17 @@ echo "Inferred xorriso reconstruction command:"
 printf 'xorriso -as mkisofs -r -V %q -o %q' "ubuntu-autoinstall-${today}" "$destination_iso"
 printf ' %q' "${filtered_flags[@]}"
 printf ' %q\n' "$tmpdir"
+# {
+#     printf 'xorriso -as mkisofs \\\n'
+#     printf '    -r -V %q \\\n' "ubuntu-autoinstall-${today}"
+#     printf '    -o %q \\\n' "$destination_iso"
+
+#     for arg in "${filtered_flags[@]}"; do
+#         printf '    %q \\\n' "$arg"
+#     done
+
+#     printf '    %q\n' "$tmpdir"
+# }
 
 xorriso -as mkisofs \
     -r -V "ubuntu-autoinstall-${today}" \

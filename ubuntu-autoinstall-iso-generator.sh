@@ -287,25 +287,27 @@ fi
 filtered_flags=()
 
 for line in "${iso_boot_flags[@]}"; do
-    case "$line" in
-        -V\ *) 
-            # Drop original volume ID — we supply our own
+    trimmed="$(sed 's/^[[:space:]]*//' <<< "$line")"
+
+    case "$trimmed" in
+        -V\ *)
             continue
             ;;
 
         --grub2-mbr\ --interval:local_fs:*)
-            # Replace entire interval descriptor with extracted MBR image
-            filtered_flags+=("--grub2-mbr BOOT/1-Boot-NoEmul.img")
+            filtered_flags+=(--grub2-mbr BOOT/1-Boot-NoEmul.img)
             ;;
 
         -append_partition\ 2\ *)
-            # Extract the GUID (3rd field)
-            part_guid=$(awk '{print $3}' <<< "$line")
-            filtered_flags+=("-append_partition 2 $part_guid BOOT/2-Boot-NoEmul.img")
+            part_guid=$(awk '{print $3}' <<< "$trimmed")
+            filtered_flags+=(-append_partition 2 "$part_guid" BOOT/2-Boot-NoEmul.img)
             ;;
 
         *)
-            filtered_flags+=("$line")
+            # Properly split the original mkisofs-style line into argv tokens
+            # This safely handles quoted paths like '/boot.catalog'
+            eval "set -- $trimmed"
+            filtered_flags+=("$@")
             ;;
     esac
 done

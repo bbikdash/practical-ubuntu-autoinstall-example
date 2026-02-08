@@ -1,6 +1,6 @@
 # Practical Autoinstall Example for Ubuntu Desktop
 
-Example of functional simple and complex autoinstall.yaml files for hands-free flashing of computers with Ubuntu 24.04 Server and/or Desktop.
+Example of functional simple and complex autoinstall.yaml files for hands-free flashing of computers with Ubuntu 24.04+ Server and/or Desktop.
 
 Shell script that can build a custom ISO image based on a standard Ubuntu Desktop/Server ISO but inserts autoinstall.yaml and optionally, modified the grub kernel command line to have completely hands-free OS installation (no user prompt at all).
 
@@ -17,8 +17,78 @@ sudo apt install xorriso 7zip
 ```
 
 ## Usage
-
 To generate a new a custom ISO image with an `autoinstall.yaml` or cloudinit file, use the following script.
+
+```bash
+Usage:
+  ubuntu-autoinstall-iso-generator.sh [OPTIONS]
+
+Summary:
+  Create a custom Ubuntu Desktop or Server ISO with an embedded autoinstall
+  configuration. The resulting ISO will automatically provision a system
+  using Subiquity when booted.
+
+  This script supports Ubuntu:
+    - Desktop 24.04 and newer
+    - Server 22.04 and newer (24.04+ recommended)
+
+Required options:
+  -a, -u, --autoinstall, --user-data FILE
+        Path to an autoinstall-compatible cloud-init user-data file.
+        This file will be copied into the ISO root as:
+            /autoinstall.yaml
+
+  -s, --source FILE
+        Path to the original Ubuntu ISO (Desktop or Server).
+        The ISO is extracted, modified, and repackaged.
+
+Optional options:
+  -d, --destination FILE
+        Output path for the generated ISO.
+        Defaults to:
+            ./custom.iso
+        Existing files will be overwritten.
+
+  --unattended, --hands-free
+        Modify GRUB boot entries to automatically start autoinstall
+        without requiring user interaction at the boot menu.
+
+        Without this flag:
+          - Subiquity will detect autoinstall.yaml
+          - A confirmation prompt may still appear
+
+        With this flag:
+          - Autoinstall starts immediately on boot
+
+  --dry-run
+        Perform input validation and print planned actions,
+        but do not extract the ISO, modify files, or repackage.
+        Exits successfully without side effects.
+
+  -h, --help
+        Show this help text and exit.
+
+Behavior notes:
+  - The autoinstall file is embedded directly at the ISO root.
+    No NoCloud seed directory is required.
+  - The resulting ISO boots in both BIOS and UEFI modes.
+  - This script is suitable for imaging physical machines and VMs.
+
+Examples:
+  Build a custom unattended ISO:
+    ubuntu-autoinstall-iso-generator.sh \
+      --source ubuntu-24.04-live-server-amd64.iso \
+      --autoinstall autoinstall.yaml \
+      --destination ubuntu-autoinstall.iso \
+      --unattended
+
+  Validate inputs without modifying anything:
+    ubuntu-autoinstall-iso-generator.sh \
+      --source ubuntu-24.04-desktop-amd64.iso \
+      --autoinstall autoinstall.yaml \
+      --dry-run
+```
+
 
 For help, run
 ```bash

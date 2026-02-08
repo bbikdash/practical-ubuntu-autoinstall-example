@@ -39,7 +39,7 @@ Example usage for completely hands-free installation, no prompting at all except
 ```
 This script is modified from here: https://github.com/covertsh/ubuntu-autoinstall-generator
 
-I removed all the ridiculous emojis, added pythonic loguru style logging, and updated grub menu manipulation to work on Ubuntu 24.04 and (hopefully) later. I tested the resulting ISOs for Server/Desktop in VirtualBox VMs and on my personal laptop.
+I removed all the ridiculous emojis, added pythonic loguru style logging, and updated grub menu manipulation to work on Ubuntu 24.04, Ubuntu 25.04, and (hopefully) later. I tested the resulting ISOs for Server/Desktop in VirtualBox VMs and on my personal laptop.
 
 
 ## Discussion/Explanation
@@ -75,7 +75,9 @@ If formed properly, the entire system should be up and running in about 15 minut
     sudo modprobe -r kvm
     ```
 3. See the modified `ubuntu-autoinstall-iso-generator.sh` to generate a custom ISO image with the autoinstall embedded and set that as the optical disk to boot from when testing with VirtualBox VMs.
-4. 
+4. If you're testing installation from scratch, I'd recommend creating a new Hard Disk and assigning that to the SATA Port. You can delete old disks by first detaching the disk you want to remove from all jobs that use it. Then go to the media tab on the left, select the disk, and then click the button at the top that says delete. This will delete the disk and free up space on you computer and then you can create a new one there.
+5. Once created, reattach the disk and this is equivalent to wiping the SSD for your virtual pc. This allows you to test the autoinstall process an arbitrary number of times. A little tedious but it's much faster than testing on real hardware.
+
 
 Recommended configurations for VirtualBox Testing
 ![VirtualBox Server Configuration](./assets/virtualbox_server_configuration.png) 

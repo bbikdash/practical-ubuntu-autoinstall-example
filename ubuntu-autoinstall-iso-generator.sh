@@ -220,6 +220,7 @@ if $unattended; then
     sed -i -e 's/ ---/ autoinstall ---/g' "$tmpdir/boot/grub/loopback.cfg"
 fi
 
+# Print contents of updated grub and loopback files
 echo >&2 -e "${BOLD_WHITE}${tmpdir}/boot/grub/grub.cfg${RESET}"
 cat "$tmpdir/boot/grub/grub.cfg"
 echo "---------------------------------------------------------------------------------------------"
@@ -265,10 +266,10 @@ echo "--------------------------------------------------------------------------
 ##################################################################################################
 #
 ###################################################################################################
-logger.info "Repackaging modified ISO from $tmpdir to $destination_iso"
-cd "$tmpdir"
-
 logger.info "Extracting boot structure flags from source ISO"
+
+# Make sure i'm in the temporary directory
+cd "$tmpdir"
 mapfile -t iso_boot_flags < <(
     xorriso -indev "$source_iso" -report_el_torito as_mkisofs 2>/dev/null \
     | awk 'BEGIN{p=0} /^[[:space:]]*-V /{p=1} p'
@@ -331,18 +332,9 @@ echo "Inferred xorriso reconstruction command:"
 printf 'xorriso -as mkisofs -r -V %q -o %q' "ubuntu-autoinstall-${today}" "$destination_iso"
 printf ' %q' "${filtered_flags[@]}"
 printf ' %q\n' "$tmpdir"
-# {
-#     printf 'xorriso -as mkisofs \\\n'
-#     printf '    -r -V %q \\\n' "ubuntu-autoinstall-${today}"
-#     printf '    -o %q \\\n' "$destination_iso"
+echo
 
-#     for arg in "${filtered_flags[@]}"; do
-#         printf '    %q \\\n' "$arg"
-#     done
-
-#     printf '    %q\n' "$tmpdir"
-# }
-
+logger.info "Repackaging modified ISO from $tmpdir to $destination_iso"
 xorriso -as mkisofs \
     -r -V "ubuntu-autoinstall-${today}" \
     -o "$destination_iso" \
